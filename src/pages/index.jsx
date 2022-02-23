@@ -1,20 +1,27 @@
 import {app, signIn} from "../../services/firebase";
-import {signInWithPopup, GoogleAuthProvider, getAuth, signOut, signInWithEmailAndPassword} from "firebase/auth";
+import {signInWithPopup, GoogleAuthProvider, getAuth, signOut, signInWithEmailAndPassword, setPersistence, browserSessionPersistence} from "firebase/auth";
 import { doc, getDoc, getFirestore, setDoc } from "firebase/firestore";
 export default function Home() {
   var user;
   const db = getFirestore(app);
   const auth = getAuth();
   const provider = new GoogleAuthProvider();
+  
 
   function Logout(){
+    if(auth.currentUser){
+      console.log("Tem user");
+    }
     var result_p = document.getElementById("resposta");
     signOut(auth).then(()=>{
       result_p.innerHTML = "Desconectado";
       user = null;
     }).catch((error)=>{
       console.log(error);
-    })
+    });
+    if(auth.currentUser){
+      console.log("Tem user");
+    }
   }
   function signInGoogle(){
     var result_p = document.getElementById("resposta");
@@ -33,10 +40,21 @@ export default function Home() {
     });
   }
   function signInEmail(){
+    if(auth.currentUser){
+      console.log("Tem user");
+    }
     var result_p = document.getElementById("resposta");
     var email = document.getElementById("email").value;
     var password = document.getElementById("password").value;
-    signInWithEmailAndPassword(auth, email, password)
+    setPersistence(auth, browserSessionPersistence)
+  .then(() => {
+    // Existing and future Auth states are now persisted in the current
+    // session only. Closing the window would clear any existing state even
+    // if a user forgets to sign out.
+    // ...
+    // New sign-in will be persisted with session persistence.
+    console.log("per");
+    return signInWithEmailAndPassword(auth, email, password)
     .then((result)=>{
       user = result.user;
       result_p.innerHTML = result.user.displayName+"<br>"+result.user.email;
@@ -45,6 +63,14 @@ export default function Home() {
       console.log(error);
       result_p.innerHTML = "Erro no login";
     });
+  })
+  .catch((error) => {
+    // Handle Errors here.
+    var errorCode = error.code;
+    var errorMessage = error.message;
+    console.log(error+"Aqui");
+  });
+    
   }
   
   function writeText(){
@@ -81,6 +107,14 @@ export default function Home() {
         console.log("Error getting document:", error);
     });
   }
+
+  function currentUserUpdate(){
+    if(auth.currentUser){
+      console.log(auth.currentUser);
+    }else{
+      console.log("sem user");
+    }
+  }
   return (
     <div>
       <input type="email" name="" id="email" />
@@ -93,6 +127,7 @@ export default function Home() {
         onClick={Logout}>Logout</button>
       <button onClick={writeText}>Escrever</button>
       <button onClick={readText}>Ler</button>
+      <button onClick={currentUserUpdate}>Verificar User</button>
     </div>
 
   );
